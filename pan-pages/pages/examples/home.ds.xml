@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="UTF-8"?>
+  <PageModel id="ai-models-home" mainView="mainView" title="概览">
+    <DataSet>
+      <DataTable id="AI_OVERVIEW" label="AI服务" mappingApi="/pan-pages/ai/api/mapping?list=SERVICE_TYPE|B_STATUS|PROVIDER_MAP&amp;OBJECT_ID=${SPACE_ID}">
+        <Field id="SERVICE_ID" component="input-text" label="服务ID" required="true" isFilter="true" />
+        <Field id="OBJECT_ID" component="input-text" label="对象ID"  isQuery="true" />
+      </DataTable>
+  </DataSet>
+  <DataStore>
+      <Data id="overview"  api="/admin-api/count/models" load="init"/>
+  </DataStore>
+
+  <Operations>
+  </Operations>
+
+  <PageView>
+    <DashboardView name="mainView" dataTable="AI_OVERVIEW" cols="4"  rows="5" api="/pan-pages/ai/api/query/models/home?ds=AI_OVERVIEW" __data="overview">
+      <children>
+        <DashboardItem title="本月总访问量" description=""> 
+                <!-- <CardHeader>
+                    <CardDescription>模型数量</CardDescription>
+                    <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
+                        3
+                    </CardTitle>
+                    <CardAction>
+                        <Badge variant="outline">
+                            <IconTrendingDown />
+                            -20%
+                        </Badge>
+                    </CardAction>
+                </CardHeader>
+                <CardFooter className="flex-col items-start gap-1.5 text-sm">
+                    <div className="line-clamp-1 flex gap-2 font-medium">
+                        Down 20% this period <IconTrendingDown className="size-4" />
+                    </div>
+                    <div className="text-muted-foreground">
+                        Acquisition needs attention
+                    </div>
+                </CardFooter> -->
+              <Header>
+                <children>
+                    <Description value="本月访问量"></Description>
+                    <Title className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl" __bind-value="${format(request_count_month.value, '#,##0')}"> </Title>
+                </children>
+              </Header> 
+              <children>
+                 
+              </children>
+              <Footer  className="items-start gap-1.5 text-sm">
+                <children>
+                    <HBox className="text-muted-foreground">
+                      <children>
+                         <Text __bind-value="${request_count_year.labels.year}年访问量：${format(request_count_year.value, '#,##0')}"/>
+                      </children>
+                    </HBox>
+                </children>
+              </Footer>
+        </DashboardItem>
+         <DashboardItem title="Token" description=""> 
+              <Header>
+                <children>
+                    <Description value="本月Token用量"></Description>
+                    <Title className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl" __bind-value="${format(token_count_month.value, '#,##0')}"> </Title>
+                </children>
+              </Header> 
+              
+              <Footer  className="items-start gap-1.5 text-sm">
+                <children>
+                    <HBox className="text-muted-foreground">
+                      <children>
+                         <Text __bind-value="${request_count_year.labels.year}年用量：${format(token_count_year.value, '#,##0')}"/>
+                      </children>
+                    </HBox>
+                </children>
+              </Footer>
+        </DashboardItem>
+        <DashboardItem >
+              <Header>
+                <children>
+                    <Description value="模型数量"></Description>
+                    <Title className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl" __bind-value="${model_count.value}"> </Title>
+                </children>
+              </Header> 
+              <children>
+                 
+              </children>
+              <Footer  className="items-start gap-1.5 text-sm">
+                <children>
+                    <HBox className="text-muted-foreground">
+                      <children>
+                         <Text __bind-value="模型服务提供者数量：${provider_count.value}"/>
+                      </children>
+                    </HBox>
+                </children>
+              </Footer>
+              
+        </DashboardItem>
+       
+        <DashboardItem title="空间数量" description=""> 
+              <Header>
+                <children>
+                    <Description value="空间数量"></Description>
+                    <Title className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl" __bind-value="${space_count.value}"> </Title>
+                </children>
+              </Header> 
+               <Footer  className="items-start gap-1.5 text-sm">
+                <children>
+                    <HBox className="text-muted-foreground">
+                      <children>
+                         <Text __bind-value="ApiKey数量: ${apikey_count.value}"/>
+                      </children>
+                    </HBox>
+                </children>
+              </Footer>
+        </DashboardItem>
+        <DashboardItem colSpan="2" rowSpan="2" title="模型月每日访问量" description=""> 
+            <children>
+                <Chart api="/admin-api/models/usage/category/model/day">
+                  <serie  type="bar" stack="total"> </serie>
+                  <option>
+                    <tooltip trigger="item" />
+                    <legend bottom="0" left="center" />
+                    <grid bottom="120"/>
+                    <xAxis type="category"/>
+                    <yAxis />
+                   
+                  </option>
+                </Chart>
+            </children>
+            <Footer>
+            </Footer>
+        </DashboardItem>
+         <DashboardItem id="2" colSpan="2" rowSpan="2" title="本月各空间访问量分布" description=""> 
+           
+            <children>
+                <Chart api="/admin-api/models/usage/space?start_day=${date-yyyyMM00}&amp;end_day=${date-yyyyMM31}" type="pie"> 
+                  <option>
+                    <tooltip trigger="item" />
+                    <legend bottom="0" left="center" />
+                     <grid bottom="100"/>
+                    <__list name="series">
+                      <serie  type="pie" list:radius="[&quot;40%&quot;,&quot;70%&quot;]" avoidLabelOverlap="false" padAngle="5">
+                          <itemStyle borderRadius="10" />
+                          <label show="false" position="center" />
+                          <emphasis>
+                            <label show="true" fontSize="40" fontWeight="bold" />
+                          </emphasis>
+                          <labelLine show="false" />
+                          <encode itemName="name" value="value" tooltip="value" />
+                      </serie>
+                    </__list>
+                  </option>
+                </Chart>
+            </children>
+            <Footer>
+             
+            </Footer>
+        </DashboardItem>
+         <DashboardItem id="3" colSpan="2" rowSpan="2" title="模型年每月访问量分布" description=""> 
+           
+            <children>
+               <Chart api="/admin-api/models/usage/category/model/month">
+                  <serie  type="line" stack="total"> </serie>
+                  <option>
+                    <tooltip trigger="axis" />
+                    <legend bottom="0"/>
+                    <grid bottom="120"/>
+                    <xAxis type="category" boundaryGap="false"/>
+                    <yAxis type="value" />
+                  </option>
+                </Chart>
+            </children>
+            <Footer>
+            
+            </Footer>
+        </DashboardItem>
+         <DashboardItem id="4" colSpan="2" rowSpan="2" title="模型各时访问量分布" description=""> 
+           
+            <children>
+                <Chart api="/admin-api/models/usage/category/model/hour">
+                  <serie  type="line" stack="total"> 
+                     <AreaStyle > </AreaStyle>
+                  </serie>
+                  <option>
+                    <tooltip trigger="item" />
+                    <legend bottom="0" left="center" />
+                    <grid bottom="100"/>
+                    <xAxis type="category"/>
+                    <yAxis />
+                   
+                  </option>
+                </Chart>
+            </children>
+            <Footer>
+             
+            </Footer>
+        </DashboardItem>
+      </children>
+    </DashboardView>
+
+  </PageView>
+</PageModel>

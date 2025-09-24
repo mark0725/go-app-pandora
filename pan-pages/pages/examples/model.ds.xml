@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<PageModel mainView="tableView" title="AI模型">
+  <DataSet>
+    <DataTable id="AI_MODEL" label="AI模型" mappingApi="/pan-pages/ai/api/mapping?list=B_STATUS|ADD_TYPE|MODEL_TYPE|MODEL_SCOPE|CONTENT_TYPE|PROVIDER_MAP" >
+      <Field id="DATA_ID"  component="select" label="ID" />
+      <Field id="MODEL_ID" component="input-text" label="模型ID" isFilter="true" required="true" />
+      <Field id="PRO_ID" component="select" label="模型提供者ID" isFilter="true" required="true" source="PROVIDER_MAP" />
+      <Field id="TAGS" component="input-tag" label="标签" isFilter="true" />
+      <Field clearable="true" component="select" id="MODEL_SCOPE" label="模型能力" isFilter="true" searchable="true" source="MODEL_SCOPE" />
+      <Field clearable="true" component="select" id="MODEL_TYPE" label="模型类型" isFilter="true" searchable="true" source="MODEL_TYPE" />
+      <Field component="textarea" id="META_DATA" label="元数据" />
+      <Field component="textarea" id="MODEL_PROFILE" label="模型设置" />
+      <Field clearable="true" component="select" defaultValue="active" id="STATUS" label="状态" isFilter="true" searchable="true" source="B_STATUS" />
+      <Field clearable="true" component="select" defaultValue="manual" id="ADD_TYPE" label="添加方式" isFilter="true" searchable="true" source="ADD_TYPE" />
+      <Field component="select" id="INPUT_TYPE" label="输入类型" multiple="true" source="CONTENT_TYPE" isFilter="true" />
+      <Field component="select" id="OUTPUT_TYPE" label="输出类型" multiple="true" source="CONTENT_TYPE" isFilter="true" />
+      <Field component="input-text" id="POINT_TO" label="指向" isFilter="true" />
+      <Field component="input-date" format="YYYYMMDDHHmmss" id="DATA_CRT_TIME" inputFormat="YYYY-MM-DD HH:mm:ss" label="数据创建时间" />
+      <Field component="input-date" id="DATA_UPD_DATE" label="数据修改日期" />
+      <Field component="input-date" id="DATA_UPD_TIME" label="数据修改时间" />
+      <Field component="input-date" id="DATA_CRT_DATE" label="数据创建日期" />
+    </DataTable>
+  </DataSet>
+
+  <Operations>
+    <Operation id="BTN_ADD" actionType="api" api="/admin-api/models" method="post" feature="add" label="创建模型" level="primary" effects="tableView" title="新增模型"/>
+    <Operation id="BTN_DEL" actionType="api" api="/admin-api/models/${DATA_ID}" method="delete" feature="delete" label="删除"  effects="tableView" level="danger" confirm="确认删除记录吗?"/>
+    <Operation id="BTN_MOD" actionType="api" api="/admin-api/models/${DATA_ID}" method="put" feature="edit" label="提交修改" effects="tableView" title="修改模型"/>
+    <Operation id="BTN_DOWNLOAD_TMPL" actionType="download" api="/fss/download/system/export-template/template/模版库-模版.xlsx" label="下载导入模版" name="export-example" />
+    <Operation id="BTN_IMPORT" actionType="import" api="/fss/import-export/excel-import/template_object?FWD=dataImport" method="post" accept=".csv,.xls,.xlsx" label="数据导入" name="file" type="input-file" />
+    <Operation id="BTN_EXPORT" actionType="export" api="/fss/import-export/excel-export/template_object?FWD=dataExport" method="post" label="数据导出" name="dataExport" type="action" />
+    <Operation id="BTN_BATCH_DEL" actionType="batch" api="/admin-api/models/batch" method="delete" id="BTN_BATCH_DEL" feature="del" label="批量删除"/>
+    <Operation id="BTN_EDIT_VIEW" actionType="view" view="editView"  label="详情" title="对象详情"/>
+    <Operation id="BTN_ADD_VIEW" actionType="view" view="addView" icon="FfPlus" label="新增" level="primary" name="add" title="对象新增"/>
+  </Operations>
+
+  <PageView>
+
+    <Dialog name="addView" title="添加模型" desc="为模型服务手动添加模型,并设置相关参数。" >
+      <children>
+        <Form dataTable="AI_MODEL" cols="2" mode="create">
+          <ActionBar name="footer">
+            <Action name="actions">
+                <children>
+                  <Element id="BTN_ADD"/>
+                </children>
+            </Action>
+          </ActionBar>
+
+          <children>
+            <Element id="MODEL_ID"/>
+            <Element id="PRO_ID"/>
+            <Element id="MODEL_SCOPE"/>
+            <Element id="MODEL_TYPE"/>
+            <Element id="INPUT_TYPE" colSpan="2"/>
+            <Element id="OUTPUT_TYPE" colSpan="2"/>
+            <Element id="POINT_TO" colSpan="2"/>
+            <Element id="TAGS" colSpan="2"/>
+            <Element id="STATUS" colSpan="2"/>
+            <Element id="META_DATA" colSpan="2"/>
+            <Element id="MODEL_PROFILE" colSpan="2"/>
+          </children>
+        </Form>
+      </children>
+    </Dialog>
+
+    <Drawer name="editView" title="详情">
+      <children>
+        <Form dataTable="AI_MODEL" cols="2" mode="edit">
+          <ActionBar name="footer">
+               <Action name="actions">
+                  <children>
+                    <Element id="BTN_MOD"/>
+                  </children>
+               </Action>
+          </ActionBar>
+
+          <children>
+            <Element id="MODEL_ID"/>
+            <Element id="PRO_ID"/>
+            <Element id="MODEL_SCOPE"/>
+            <Element id="MODEL_TYPE"/>
+            <Element id="ADD_TYPE"/>
+            <Element id="INPUT_TYPE"/>
+            <Element id="OUTPUT_TYPE"/>
+            <Element id="STATUS"/>
+            <Element id="POINT_TO" colSpan="2"/>
+            <Element id="TAGS" colSpan="2"/>
+            <Element id="META_DATA" colSpan="2"/>
+            <Element id="MODEL_PROFILE" colSpan="2"/>
+          </children>
+        </Form>
+      </children>
+    </Drawer>
+
+    <TableView name="tableView" dataTable="AI_MODEL" rowKey="DATA_ID" api="/pan-pages/ai/api/query-page/models/model?ds=AI_MODEL" autoFillHeight="true" defaultShowDetail="false" >
+      <options default="detail" detailWidth="780" minDetailWidth="460" minTableWidth="320"/>
+      <DefaultParams name="defaultParams" page="1" size="50"/>
+
+      <ColActionBar>
+        <children>
+          <Element id="BTN_EDIT_VIEW"/>
+          <Element id="BTN_DEL"/>
+        </children>
+      </ColActionBar>
+
+      <ToolBar draggable="false" isFilterPlus="false" isGroup="true" isMode="true" isReset="true">
+          <ActionBar name="left">
+            <Action name="actions">
+              <children>
+                <Element id="BTN_ADD_VIEW"/>
+                <Element id="BTN_BATCH_DEL"/>
+              </children>
+            </Action>
+            <ActionMore name="actionMore">
+              <children>
+                <Element id="BTN_IMPORT"/>
+                <Element id="BTN_EXPORT"/>
+                <Element id="BTN_DOWNLOAD_TMPL"/>
+              </children>
+             
+            </ActionMore>
+          </ActionBar>
+
+          <FilterBar name="right" isControl="false" isGroup="true" isMode="true" isReset="true">
+            <children>
+              <Element id="MODEL_ID" dynamic="false" width="300"/>
+              <Element id="PRO_ID" dynamic="false" width="300"/>
+              <Element id="MODEL_SCOPE" width="220"/>
+              <Element id="MODEL_TYPE" width="80"/>
+            </children>
+          </FilterBar>
+      </ToolBar>
+       <TableHead/>
+      <TableBody>
+        <children>
+          <Element id="__check" fixed="left"/>
+          <Element id="MODEL_ID" width="300"/>
+          <Element id="PRO_ID" width="150"/>
+          <Element id="MODEL_SCOPE" filterable="true" width="220"/>
+          <Element id="MODEL_TYPE" filterable="true" width="80"/>
+          <Element id="ADD_TYPE" sortable="false" filterable="true" width="80"/>
+          <Element id="INPUT_TYPE" sortable="false" filterable="true" width="180"/>
+          <Element id="OUTPUT_TYPE" width="180"/>
+          <Element id="POINT_TO" width="180"/>
+          <Element id="STATUS" width="80"/>
+          <Element id="DATA_CRT_TIME" width="100"/>
+          <Element id="opr" components="BTN_EDIT_VIEW,BTN_DEL" fixed="right" label="操作" width="130"/>
+        </children>
+      </TableBody>
+
+      <TableFoot placeLeft="statistics" placeRight="pagination,switchPage" show="true" showPageInput="true" switchPage="5, 10, 20, 50, 100" />
+     
+    </TableView>
+  </PageView>
+</PageModel>
