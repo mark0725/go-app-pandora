@@ -5,8 +5,10 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"strings"
 
 	"github.com/gin-gonic/gin"
+	pandora_assets "github.com/mark0725/go-pandora"
 )
 
 func InitRoutes(group string, r *gin.RouterGroup) {
@@ -69,6 +71,28 @@ func Pages(c *gin.Context) {
 }
 
 func PandoraAssets(c *gin.Context) {
+	remote := g_appConfig.Pandora.PanUrl
+	if strings.HasPrefix(remote, "http://") || strings.HasPrefix(remote, "https://") {
+		PandoraAssetsHttp(c)
+		return
+	}
+
+	reqPath := c.Request.URL.Path
+	if reqPath == "/" {
+		reqPath = "/index.html"
+	}
+	reqPath = path.Clean("/" + strings.Trim(reqPath, "/")) // 防止 .. 注入
+
+	if strings.HasPrefix(remote, "embed://") {
+		staticFS := http.FS(pandora_assets.StaticFiles)
+		staticFilePath := remote[len("embed://"):] + reqPath
+		c.FileFromFS(staticFilePath, staticFS)
+		return
+	}
+
+	c.File(remote + reqPath)
+}
+func PandoraAssetsHttp(c *gin.Context) {
 
 	remote := g_appConfig.Pandora.PanUrl
 	targetURL := remote + c.Request.RequestURI

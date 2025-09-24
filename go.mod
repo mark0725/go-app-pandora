@@ -1,10 +1,11 @@
 module github.com/mark0725/go-app-pandora
 
-go 1.24.0
+go 1.25.1
 
 require (
 	github.com/gin-gonic/gin v1.10.0
 	github.com/mark0725/go-app-base v0.0.0-20250923070656-7fc80359f3ed
+	github.com/mark0725/go-pandora v0.0.0-20250924064844-3d264263b672
 )
 
 require (
