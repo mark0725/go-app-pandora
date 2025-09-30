@@ -105,28 +105,10 @@ func (api *AppApi) Config(c *gin.Context) {
 		case "nav2":
 			appConfig.Menu.Nav2 = append(appConfig.Menu.Nav2, &menu)
 		case "nav-user":
-			appConfig.Menu.NavUser = []*MenuItem{
-				{
-					Id:    "user-setting",
-					Type:  "page",
-					Title: "用户设置",
-				},
-				{
-					Id:    "user-password",
-					Type:  "page",
-					Title: "修改密码",
-				},
-				{
-					Id:   "separator",
-					Type: "separator",
-				},
-				{
-					Id:    "logout",
-					Type:  "link",
-					Title: "退出登录",
-					Url:   appConfig.Auth.SignoutUrl,
-				},
+			if appConfig.Menu.NavUser == nil {
+				appConfig.Menu.NavUser = make([]*MenuItem, 0)
 			}
+			appConfig.Menu.NavUser = append(appConfig.Menu.NavUser, &menu)
 
 		default:
 			logger.Errorf("module: %s nav_position: %s error: %v", module.ModuleId, module.NavPosition, err)
