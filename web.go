@@ -2,6 +2,7 @@ package pandora
 
 import (
 	"io"
+	"io/fs"
 	"net/http"
 	"os"
 	"path"
@@ -78,19 +79,33 @@ func PandoraAssets(c *gin.Context) {
 	}
 
 	reqPath := c.Request.URL.Path
+	if strings.HasPrefix(remote, "embed://") {
+		fSys, _ := fs.Sub(pandora_assets.StaticFiles, remote[len("embed://"):])
+		staticFS := http.FS(fSys)
+		if f, err := staticFS.Open(reqPath); err != nil {
+			logger.Debug("file not found:", reqPath)
+			reqPath = "/"
+		} else {
+			defer f.Close()
+		}
+		c.FileFromFS(reqPath, staticFS)
+		return
+	}
 	if reqPath == "/" {
 		reqPath = "/index.html"
 	}
-	reqPath = path.Clean("/" + strings.Trim(reqPath, "/")) // 防止 .. 注入
 
-	if strings.HasPrefix(remote, "embed://") {
-		staticFS := http.FS(pandora_assets.StaticFiles)
-		staticFilePath := remote[len("embed://"):] + reqPath
-		c.FileFromFS(staticFilePath, staticFS)
+	reqPath = path.Clean("/" + strings.Trim(reqPath, "/"))
+	localPath := remote + reqPath
+	if _, err := os.Stat(localPath); err != nil {
+		if os.IsNotExist(err) {
+			c.Status(http.StatusNotFound)
+		} else {
+			c.String(http.StatusInternalServerError, err.Error())
+		}
 		return
 	}
-
-	c.File(remote + reqPath)
+	c.File(localPath)
 }
 func PandoraAssetsHttp(c *gin.Context) {
 

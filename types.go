@@ -26,6 +26,7 @@ type DictItem struct {
 
 type AppConfig struct {
 	App  AppInfo    `json:"app"`
+	Auth *UserAuth  `json:"auth,omitempty"`
 	User *UserInfo  `json:"user,omitempty"`
 	Menu MenuConfig `json:"menu"`
 }
@@ -35,6 +36,14 @@ type AppInfo struct {
 	Version string `json:"version"`
 	Logo    string `json:"logo"`
 	Title   string `json:"title"`
+}
+
+type UserAuth struct {
+	Authed     bool   `json:"authed"`
+	AuthType   string `json:"auth_type"`
+	AuthUrl    string `json:"auth_url"`
+	SigninUrl  string `json:"signin_url"`
+	SignoutUrl string `json:"signout_url"`
 }
 
 type UserInfo struct {

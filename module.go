@@ -2,7 +2,6 @@ package pandora
 
 import (
 	"errors"
-	"fmt"
 
 	"github.com/gin-gonic/gin"
 	base_app "github.com/mark0725/go-app-base/app"
@@ -24,7 +23,6 @@ func init() {
 }
 
 func (m *AppModule) Init(appConfig any, depends []string) error {
-	fmt.Printf("config: %#v\n", appConfig)
 	if v, ok := appConfig.(*AppModuleConfig); !ok {
 		logger.Error("invalid app config")
 		return errors.New("invalid app config")
@@ -34,6 +32,7 @@ func (m *AppModule) Init(appConfig any, depends []string) error {
 
 	logger.Tracef("AppModule %s init ... ", APP_MODULE_NAME)
 	if err := InitPageEngine(); err != nil {
+		logger.Error("init page engine error: ", err)
 		return err
 	}
 

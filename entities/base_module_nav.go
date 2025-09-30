@@ -23,6 +23,10 @@ type BaseModuleNav struct {
 	DataUpdDate string `gorm:"column:data_upd_date;type:VARCHAR(10)" json:"data_upd_date,omitempty" yaml:"data_upd_date,omitempty" field-id:"data_upd_date" field-type:"varchar"`
 	DataUpdTime string `gorm:"column:data_upd_time;type:VARCHAR(20)" json:"data_upd_time,omitempty" yaml:"data_upd_time,omitempty" field-id:"data_upd_time" field-type:"varchar"`
 	Status      string `gorm:"column:status;type:VARCHAR(30)" json:"status,omitempty" yaml:"status,omitempty" field-id:"status" field-type:"varchar"`
+	AppModule   string `gorm:"column:app_module;type:VARCHAR(100)" json:"app_module,omitempty" yaml:"app_module,omitempty" field-id:"app_module" field-type:"varchar"`
+	NavPosition string `gorm:"column:nav_position;type:VARCHAR(100)" json:"nav_position,omitempty" yaml:"nav_position,omitempty" field-id:"nav_position" field-type:"varchar"`
+	ParamName   string `gorm:"column:param_name;type:VARCHAR(100)" json:"param_name,omitempty" yaml:"param_name,omitempty" field-id:"param_name" field-type:"varchar"`
+	PNavId      string `gorm:"column:p_nav_id;type:VARCHAR(100)" json:"p_nav_id,omitempty" yaml:"p_nav_id,omitempty" field-id:"p_nav_id" field-type:"varchar"`
 }
 
 func (BaseModuleNav) TableName() string { return "base_module_nav" }

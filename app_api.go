@@ -8,6 +8,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 	base_db "github.com/mark0725/go-app-base/db"
+	base_web "github.com/mark0725/go-app-base/web"
+	_ "github.com/mark0725/go-app-base/web/middleware"
 )
 
 type AppApi struct{}
@@ -27,12 +29,26 @@ func (api *AppApi) Config(c *gin.Context) {
 			Nav2: []*MenuItem{},
 		},
 	}
-	if len(g_appConfig.Pandora.Auth) > 0 {
-		userId := c.GetString("auth_user_id")
-		if userId == "" {
-			logger.Errorf("get auth_user_id error: %s", userId)
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "user nnauthorized"})
+	if len(g_appConfig.Pandora.User.AuthType) > 0 {
+		appConfig.Auth = &UserAuth{
+			AuthType:   g_appConfig.Pandora.User.AuthType,
+			AuthUrl:    g_appConfig.Pandora.User.AuthUrl,
+			SigninUrl:  g_appConfig.Pandora.User.SigninUrl,
+			SignoutUrl: g_appConfig.Pandora.User.SignoutUrl,
+		}
+		userId := ""
+		if v, ok := c.Get(base_web.CtxKeyAuthenticatedConsumer); !ok {
+			c.JSON(http.StatusOK, ApiReponse{Code: "OK", Message: "OK", Data: appConfig})
 			return
+		} else {
+			if vv, ok := v.(*base_web.AuthenticatedConsumer); ok {
+				appConfig.Auth.Authed = true
+				userId = vv.Id
+			} else {
+				logger.Errorf("AuthenticatedConsumer type error: %s", userId)
+				c.JSON(http.StatusInternalServerError, ApiReponse{Code: "ERROR", Message: "User not found"})
+				return
+			}
 		}
 
 		sqlParams := map[string]any{
@@ -67,7 +83,7 @@ func (api *AppApi) Config(c *gin.Context) {
 	}
 	logger.Debug("sqlParams:", sqlParams)
 
-	modules, err := base_db.DBQueryEnt2[entities.BaseModule](base_db.DB_CONN_NAME_DEFAULT, entities.DB_TABLE_BASE_MODULE, base_db.NewDBQueryOptions().Where("ORG_ID={ORG_ID} and STATUS='00'").Params(sqlParams).Order("order_no"))
+	modules, err := base_db.DBQueryEnt2[entities.BaseModuleNav](base_db.DB_CONN_NAME_DEFAULT, entities.DB_TABLE_BASE_MODULE_NAV, base_db.NewDBQueryOptions().Where("ORG_ID={ORG_ID} and MODULE_ID='main' and STATUS='00'").Params(sqlParams).Order("order_no"))
 	if err != nil {
 		logger.Error("DBQueryEnt fail: ", err)
 		c.JSON(http.StatusInternalServerError, ApiReponse{Code: "ERROR", Message: "DBQueryEnt fail"})
@@ -75,13 +91,13 @@ func (api *AppApi) Config(c *gin.Context) {
 	}
 	for _, module := range modules {
 		menu := MenuItem{
-			Id:         module.ModuleId,
+			Id:         module.NavId,
 			Type:       module.ViewType,
-			Title:      module.ModuleName,
+			Title:      module.NavName,
 			TitleShort: module.TitleShort,
 			View:       module.NavType,
 			Url:        module.Url,
-			Ico:        module.ModuleIcon,
+			Ico:        module.NavIcon,
 		}
 		switch module.NavPosition {
 		case "main":
@@ -108,7 +124,7 @@ func (api *AppApi) Config(c *gin.Context) {
 					Id:    "logout",
 					Type:  "link",
 					Title: "退出登录",
-					Url:   "/user/logout",
+					Url:   appConfig.Auth.SignoutUrl,
 				},
 			}
 
@@ -134,7 +150,7 @@ func (api *AppApi) ModuleConfig(c *gin.Context) {
 		"MODULE_ID": moduleId,
 	}
 	logger.Debug("sqlParams:", sqlParams)
-	recs, err := base_db.DBQueryEnt[entities.BaseModule](base_db.DB_CONN_NAME_DEFAULT, entities.DB_TABLE_BASE_MODULE, "ORG_ID={ORG_ID} and MODULE_ID={MODULE_ID} and STATUS='00'", sqlParams)
+	recs, err := base_db.DBQueryEnt[entities.BaseModuleNav](base_db.DB_CONN_NAME_DEFAULT, entities.DB_TABLE_BASE_MODULE_NAV, "ORG_ID={ORG_ID} and MODULE_ID='main' and NAV_ID={MODULE_ID} and STATUS='00'", sqlParams)
 	if err != nil {
 		logger.Error("DBQueryEnt fail: ", err)
 		c.JSON(http.StatusInternalServerError, ApiReponse{Code: "ERROR", Message: "DBQueryEnt fail"})
@@ -148,23 +164,23 @@ func (api *AppApi) ModuleConfig(c *gin.Context) {
 
 	moduleInfo := recs[0]
 	pageConfig := PageConfig{
-		Title:      moduleInfo.ModuleName,
+		Title:      moduleInfo.NavName,
 		TitleShort: moduleInfo.TitleShort,
 		Type:       moduleInfo.ViewType,
 		Menu:       []*MenuItem{},
 	}
 	if moduleInfo.ViewType == "select-nav-page" {
-		items, err := mapping("ai", []string{moduleInfo.DynApi}, nil)
+		items, err := mapping(moduleInfo.AppModule, []string{moduleInfo.MenuApi}, nil)
 		if err != nil {
 			logger.Error("QueryDict error: ", err)
 			c.JSON(http.StatusInternalServerError, ApiReponse{Code: "ERROR", Message: "QueryDict error"})
 		}
 
-		if len(items[moduleInfo.DynApi].Options) > 0 {
+		if len(items[moduleInfo.MenuApi].Options) > 0 {
 			pageConfig.Select = &MenuSelect{
 				Param: moduleInfo.ParamName,
-				Value: items[moduleInfo.DynApi].Options[0].Value,
-				Items: items[moduleInfo.DynApi].Options,
+				Value: items[moduleInfo.MenuApi].Options[0].Value,
+				Items: items[moduleInfo.MenuApi].Options,
 			}
 		}
 	}

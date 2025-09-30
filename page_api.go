@@ -2,6 +2,7 @@ package pandora
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -61,7 +62,16 @@ func (api *PageApi) PageQuery(c *gin.Context) {
 		return
 	}
 
+	orderBy := ""
+	if s := c.Query("order"); s != "" {
+		orderBy = fmt.Sprintf(" order by %s", s)
+		if !strings.Contains(queryParam.sql, "order") {
+			queryParam.sql += orderBy
+		}
+	}
+
 	logger.Debugf("Page Index: %d, Page Size: %d", pageIndex, pageSize)
+	logger.Debugf("Query Param: %+v", queryParam)
 	pageQueryResult, err := base_db.DBPageQuery(queryParam.db, queryParam.sql, queryParam.params, pageSize, pageIndex)
 	if err != nil {
 		logger.Error("DBPageQuery fail: ", err)
@@ -103,6 +113,14 @@ func (api *PageApi) Query(c *gin.Context) {
 	}
 
 	sqlBuildResult := base_db.QueryNamedParamsBuilder(queryParam.sql, queryParam.params)
+	orderBy := ""
+	if s := c.Query("order"); s != "" {
+		orderBy = fmt.Sprintf(" order by %s", s)
+		if !strings.Contains(queryParam.sql, "order") {
+			sqlBuildResult.Sql += orderBy
+		}
+	}
+	logger.Debugf("Query Param: %+v", sqlBuildResult)
 	rows, err := base_db.DBQuery(queryParam.db, sqlBuildResult.Sql, sqlBuildResult.Params)
 	if err != nil {
 		logger.Error("DBPageQuery fail: ", err)
@@ -247,7 +265,7 @@ func GetPageQueryParam(c *gin.Context, module string, path string) (*PageQueryPa
 	if fn, ok := g_PanPageQueries[module]; !ok {
 		logger.Errorf("Not found module: %s", module)
 		c.JSON(http.StatusNotFound, ApiReponse{Code: "NOT_FOUND", Message: "not found error"})
-		return nil, err
+		return nil, errors.New("Not found module")
 
 	} else {
 		db, querySql, err = fn(ctx, path, queryParams, dataTable)
@@ -258,16 +276,18 @@ func GetPageQueryParam(c *gin.Context, module string, path string) (*PageQueryPa
 		}
 
 		if querySql == "" {
+
 			if dataTable.TableName != "" {
 				queryParams["ORG_ID"] = g_appConfig.Org.OrgId
 				for k, v := range staticParams {
 					queryParams[k] = v
 				}
 				sqlParts := base_db.NewQueryParamsBuilder().Params(queryParams).Build()
-				querySql := fmt.Sprintf("SELECT %s FROM %s WHERE org_id = {ORG_ID}", strings.Join(fieldIds, ","), dataTable.TableName)
+				querySql = fmt.Sprintf("SELECT %s FROM %s WHERE 1=1 ", strings.Join(fieldIds, ","), dataTable.TableName)
 				if sqlParts != "" {
 					querySql += " AND " + sqlParts
 				}
+				logger.Debug("use default query: ", querySql)
 			} else {
 				logger.Errorf("Build query error: %v", err)
 				c.JSON(http.StatusInternalServerError, ApiReponse{Code: "ERROR", Message: "Build query error"})
