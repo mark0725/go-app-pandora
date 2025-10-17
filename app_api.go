@@ -9,7 +9,6 @@ import (
 	"github.com/gin-gonic/gin"
 	base_db "github.com/mark0725/go-app-base/db"
 	base_web "github.com/mark0725/go-app-base/web"
-	_ "github.com/mark0725/go-app-base/web/middleware"
 )
 
 type AppApi struct{}

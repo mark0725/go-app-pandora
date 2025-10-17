@@ -4,7 +4,7 @@ go 1.25.1
 
 require (
 	github.com/gin-gonic/gin v1.10.1
-	github.com/mark0725/go-app-base v0.0.0-20250930085943-b35842762e8a
+	github.com/mark0725/go-app-base v0.0.0-20251017085410-af574759df2f
 	github.com/mark0725/go-pandora v0.0.0-20250924092418-066d47095db5
 )
 
