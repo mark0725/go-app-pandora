@@ -2,6 +2,8 @@ package pandora
 
 import (
 	"context"
+	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -21,7 +23,7 @@ type PanPageQuery struct {
 
 var g_PanPageQueries = map[string]PanPageQueryFunc{}
 
-type PanPageQueryFunc func(ctx context.Context, path string, params map[string]any, dataTable *page_model.DataTable) (string, string, error)
+type PanPageQueryFunc func(ctx context.Context, path string, params map[string]any, dataTable *page_model.DataTable) (string, *base_db.QueryParamsOptions, error)
 
 func RegisterPageQuery(module string, fn PanPageQueryFunc) {
 	g_PanPageQueries[module] = fn
@@ -231,13 +233,13 @@ func GetPageQueryParam(c *gin.Context, module string, path string) (*PageQueryPa
 	ds := c.Query("ds")
 	if len(ds) == 0 {
 		c.JSON(http.StatusBadRequest, ApiReponse{Code: "BadRequest", Message: "ds is not found"})
-		return nil, err
+		return nil, errors.New("dataset param not set")
 	}
 
 	if _, ok := pageview.DataSet[ds]; !ok {
 		logger.Error("DataSet not found: ", ds)
 		c.JSON(http.StatusBadRequest, ApiReponse{Code: "BadRequest", Message: "DataSet not found"})
-		return nil, err
+		return nil, errors.New("dataSet not found")
 	}
 
 	dataTable := pageview.DataSet[ds]
@@ -246,55 +248,106 @@ func GetPageQueryParam(c *gin.Context, module string, path string) (*PageQueryPa
 	staticParams := map[string]string{}
 	for _, f := range dataTable.Fields {
 		fieldIds = append(fieldIds, f.Id)
-		if f.StaticValue != "" {
-			staticParams[f.Id] = f.StaticValue
-		}
-		if f.IsFilter || f.IsQuery {
+
+		if f.IsFilter {
 			if v, exist := c.GetQuery(f.Id); exist {
 				queryParams[f.Id] = v
 			}
 		}
-	}
-	logger.Debug("queryParams: ", queryParams)
-
-	ctx := context.Background()
-	// ctx = context.WithValue(ctx, userIDKey, 12345)
-
-	querySql := ""
-	db := base_db.DB_CONN_NAME_DEFAULT
-	if fn, ok := g_PanPageQueries[module]; !ok {
-		logger.Errorf("Not found module: %s", module)
-		c.JSON(http.StatusNotFound, ApiReponse{Code: "NOT_FOUND", Message: "not found error"})
-		return nil, errors.New("Not found module")
-
-	} else {
-		db, querySql, err = fn(ctx, path, queryParams, dataTable)
-		if err != nil {
-			logger.Errorf("Build query error: %v", err)
-			c.JSON(http.StatusInternalServerError, ApiReponse{Code: "ERROR", Message: "Build query error"})
-			return nil, err
+		if f.IsQuery {
+			if v, exist := c.GetQuery(f.Id); exist {
+				queryParams[f.Id] = v
+			} else {
+				logger.Error("Query param not found: ", f.Id)
+				c.JSON(http.StatusBadRequest, ApiReponse{Code: "BadRequest", Message: fmt.Sprintf("Query param %s not found", f.Id)})
+				return nil, fmt.Errorf("Query param %s not found", f.Id)
+			}
 		}
 
-		if querySql == "" {
+		if f.StaticValue != "" {
+			staticParams[f.Id] = f.StaticValue
+		}
+		// if f.StaticValue != "" {
+		// 	queryParams[f.Id] = f.StaticValue
+		// }
+	}
 
-			if dataTable.TableName != "" {
-				queryParams["ORG_ID"] = g_appConfig.Org.OrgId
-				for k, v := range staticParams {
-					queryParams[k] = v
-				}
-				sqlParts := base_db.NewQueryParamsBuilder().Params(queryParams).Build()
-				querySql = fmt.Sprintf("SELECT %s FROM %s WHERE 1=1 ", strings.Join(fieldIds, ","), dataTable.TableName)
-				if sqlParts != "" {
-					querySql += " AND " + sqlParts
-				}
-				logger.Debug("use default query: ", querySql)
-			} else {
-				logger.Errorf("Build query error: %v", err)
-				c.JSON(http.StatusInternalServerError, ApiReponse{Code: "ERROR", Message: "Build query error"})
-				return nil, err
+	spOps := map[string]string{}
+	filterParams := FilterParam{}
+	if filterEnc, exist := c.GetQuery("filter"); exist {
+		rawURLDec := base64.RawURLEncoding
+		dst1 := make([]byte, rawURLDec.DecodedLen(len(filterEnc)))
+		_, err := rawURLDec.Decode(dst1, []byte(filterEnc))
+		if err != nil {
+			logger.Error(err)
+			c.JSON(http.StatusBadRequest, ApiReponse{Code: "BadRequest", Message: "filter decode error"})
+		}
+		logger.Debug("filter: ", string(dst1))
+
+		if err := json.Unmarshal(dst1, &filterParams); err != nil {
+			logger.Error(err)
+			c.JSON(http.StatusBadRequest, ApiReponse{Code: "BadRequest", Message: "filter json decode error"})
+		}
+
+		for _, item := range filterParams.Items {
+			if _, ok := queryParams[item.Key]; ok {
+				continue
+			}
+			queryParams[item.Key] = item.Value
+			switch item.TypeValue {
+			case "is-null":
+				spOps[item.Key] = "is null"
+			case "is-not-null":
+				spOps[item.Key] = "is not null"
+			case "not-in":
+				spOps[item.Key] = "not in"
+			default:
+				spOps[item.Key] = item.TypeValue
 			}
 		}
 	}
 
-	return &PageQueryParam{db: db, sql: querySql, params: queryParams}, nil
+	logger.Debug("queryParams: ", queryParams)
+	logger.Debugf("filter: %+v", filterParams)
+
+	ctx := context.Background()
+	// ctx = context.WithValue(ctx, userIDKey, 12345)
+
+	db := base_db.DB_CONN_NAME_DEFAULT
+	fn, ok := g_PanPageQueries[module]
+	if !ok {
+		logger.Errorf("Not found module: %s", module)
+		c.JSON(http.StatusNotFound, ApiReponse{Code: "NOT_FOUND", Message: "not found error"})
+		return nil, errors.New("not found module")
+
+	}
+
+	queryBuilder := base_db.NewQueryParamsBuilder()
+	db, sqlOption, err := fn(ctx, path, queryParams, dataTable)
+	if err != nil {
+		logger.Errorf("Build query error: %v", err)
+		c.JSON(http.StatusInternalServerError, ApiReponse{Code: "ERROR", Message: "Build query error"})
+		return nil, err
+	}
+
+	querySql := ""
+	var sqlParams map[string]any
+	if sqlOption == nil {
+		if dataTable.TableName != "" {
+			queryParams["ORG_ID"] = g_appConfig.Org.OrgId
+			for k, v := range staticParams {
+				queryParams[k] = v
+			}
+			querySql, sqlParams = queryBuilder.From(dataTable.TableName).Columns(fieldIds...).WhereMap(queryParams).SpOps(spOps).Build()
+			logger.Debug("use default query: ", querySql)
+		} else {
+			logger.Errorf("Build query error: %v", err)
+			c.JSON(http.StatusNotFound, ApiReponse{Code: "ERROR", Message: "no query found"})
+			return nil, errors.New("no query found")
+		}
+	} else {
+		querySql, sqlParams = sqlOption.SpOps(spOps).Build()
+	}
+
+	return &PageQueryParam{db: db, sql: querySql, params: sqlParams}, nil
 }

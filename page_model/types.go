@@ -35,23 +35,26 @@ type DataObject struct {
 }
 
 type Field struct {
-	XMLName      xml.Name `xml:"Field"                                        json:"-"`
-	Id           string   `xml:"id,attr,omitempty"                            json:"id,omitempty"`
-	Component    string   `xml:"component,attr,omitempty"                     json:"component,omitempty"`
-	Label        string   `xml:"label,attr,omitempty"                         json:"label,omitempty"`
-	Name         string   `xml:"name,attr,omitempty"                          json:"name,omitempty"`
-	Source       string   `xml:"source,attr,omitempty"                        json:"source,omitempty"`
-	Required     bool     `xml:"required,attr,omitempty"                      json:"required,omitempty"`
-	IsFilter     bool     `xml:"isFilter,attr,omitempty"                      json:"isFilter,omitempty"`
-	IsQuery      bool     `xml:"isQuery,attr,omitempty"                       json:"isQuery,omitempty"`
-	Searchable   bool     `xml:"searchable,attr,omitempty"                    json:"searchable,omitempty"`
-	Clearable    bool     `xml:"clearable,attr,omitempty"                     json:"clearable,omitempty"`
-	Format       string   `xml:"format,attr,omitempty"                        json:"format,omitempty"`
-	InputFormat  string   `xml:"inputFormat,attr,omitempty"                   json:"inputFormat,omitempty"`
-	Multiple     bool     `xml:"multiple,attr,omitempty"                      json:"multiple,omitempty"`
-	DefaultValue string   `xml:"defaultValue,attr,omitempty"                  json:"defaultValue,omitempty"`
-	StaticValue  string   `xml:"staticValue,attr,omitempty"                  json:"staticValue,omitempty"`
-	Disabled     bool     `xml:"disabled,attr,omitempty"                      json:"disabled,omitempty"`
+	XMLName        xml.Name          `xml:"Field"                                        json:"-"`
+	Id             string            `xml:"id,attr,omitempty"                            json:"id,omitempty"`
+	Component      string            `xml:"component,attr,omitempty"                     json:"component,omitempty"`
+	Label          string            `xml:"label,attr,omitempty"                         json:"label,omitempty"`
+	Name           string            `xml:"name,attr,omitempty"                          json:"name,omitempty"`
+	Source         string            `xml:"source,attr,omitempty"                        json:"source,omitempty"`
+	Required       bool              `xml:"required,attr,omitempty"                      json:"required,omitempty"`
+	IsFilter       bool              `xml:"isFilter,attr,omitempty"                      json:"isFilter,omitempty"`
+	FilterOps      string            `xml:"filterOps,attr,omitempty"                     json:"filterOps,omitempty"`
+	IsQuery        bool              `xml:"isQuery,attr,omitempty"                       json:"isQuery,omitempty"`
+	Searchable     bool              `xml:"searchable,attr,omitempty"                    json:"searchable,omitempty"`
+	Clearable      bool              `xml:"clearable,attr,omitempty"                     json:"clearable,omitempty"`
+	Format         string            `xml:"format,attr,omitempty"                        json:"format,omitempty"`
+	InputFormat    string            `xml:"inputFormat,attr,omitempty"                   json:"inputFormat,omitempty"`
+	Multiple       bool              `xml:"multiple,attr,omitempty"                      json:"multiple,omitempty"`
+	DefaultValue   string            `xml:"defaultValue,attr,omitempty"                  json:"defaultValue,omitempty"`
+	StaticValue    string            `xml:"staticValue,attr,omitempty"                  json:"staticValue,omitempty"`
+	Disabled       bool              `xml:"disabled,attr,omitempty"                      json:"disabled,omitempty"`
+	SelectFilterBy string            `xml:"selectFilterBy,attr,omitempty" json:"selectFilterBy,omitempty"`
+	EffectMap      map[string]string `xml:"EffectMap" json:"effectMap,omitempty"`
 }
 
 type Operation struct {
@@ -67,6 +70,7 @@ type Operation struct {
 	Api        string   `xml:"api,attr,omitempty"       json:"api,omitempty"`
 	Method     string   `xml:"method,attr,omitempty"       json:"method,omitempty"`
 	View       string   `xml:"view,attr,omitempty"       json:"view,omitempty"`
+	Store      string   `xml:"store,attr,omitempty"     json:"store,omitempty"`
 	Confirm    string   `xml:"confirm,attr,omitempty"       json:"confirm,omitempty"`
 	Effects    string   `xml:"effects,attr,omitempty"       json:"effects,omitempty"`
 }

@@ -17,11 +17,12 @@ type Dict struct {
 }
 
 type DictItem struct {
-	Value string `json:"value,omitempty"`
-	Label string `json:"label,omitempty"`
-	Icon  string `json:"icon,omitempty"`
-	Style string `json:"style,omitempty"`
-	Color string `json:"color,omitempty"`
+	Value  string            `json:"value,omitempty"`
+	Label  string            `json:"label,omitempty"`
+	Icon   string            `json:"icon,omitempty"`
+	Style  string            `json:"style,omitempty"`
+	Color  string            `json:"color,omitempty"`
+	Fields map[string]string `json:"fields,omitempty"`
 }
 
 type AppConfig struct {
@@ -85,4 +86,16 @@ type PageConfig struct {
 	TitleShort string      `json:"title_short,omitempty"`
 	Select     *MenuSelect `json:"select,omitempty"`
 	Menu       []*MenuItem `json:"menu"`
+}
+
+type FilterParamItem struct {
+	Key       string `json:"key"`
+	Type      string `json:"type"`
+	TypeValue string `json:"type_value"`
+	Value     any    `json:"value"`
+}
+
+type FilterParam struct {
+	Opr   string            `json:"opr"`
+	Items []FilterParamItem `json:"items"`
 }
