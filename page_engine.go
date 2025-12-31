@@ -19,14 +19,17 @@ func InitPageEngine() error {
 }
 
 func GetPageView(pagePath string, params map[string]string) (*page_model.PageModel, error) {
-	fullPath := path.Join(g_appConfig.Pandora.PagesPath, "pages", pagePath+".ds.xml")
+	fullPath := path.Join(g_appConfig.Pandora.PagesPath, "pages", pagePath)
 	logger.Infof("GetPageView [%s]", fullPath)
 	//判断文件是否存在
-	if _, err := os.Stat(fullPath); os.IsNotExist(err) {
+	if _, err := os.Stat(fullPath + ".ds.xml"); os.IsNotExist(err) {
 		logger.Errorf("GetPageView [%s] not found", fullPath)
 	}
 
-	PageView, err := page_model.ParsePageModel(fullPath, params)
+	vars := map[string]any{}
+	vars["Params"] = params
+
+	PageView, err := page_model.ParsePageModel(fullPath, vars)
 	if err != nil {
 		logger.Errorf("PageEngine [%s] parse error", fullPath)
 		return nil, err
@@ -35,8 +38,12 @@ func GetPageView(pagePath string, params map[string]string) (*page_model.PageMod
 	return PageView, nil
 }
 
-func PageEngine(title string, pagePath string, env any, props any, params map[string]string) ([]byte, error) {
-	mapObj, err := page_model.ParsePageModel2Map(pagePath, params)
+func PageEngine(title string, pagePath string, env map[string]any, props map[string]any, params map[string]string) ([]byte, error) {
+	vars := map[string]any{}
+	vars["Env"] = env
+	vars["Props"] = props
+	vars["Params"] = params
+	mapObj, err := page_model.ParsePageModel2Map(pagePath, vars)
 	if err != nil {
 		logger.Errorf("GetPageView [%s] error: %v", pagePath, err)
 		return nil, err

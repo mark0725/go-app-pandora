@@ -3,6 +3,8 @@ package pandora
 import (
 	"fmt"
 	"net/http"
+	"regexp"
+	"strings"
 
 	"github.com/mark0725/go-app-pandora/entities"
 
@@ -14,6 +16,17 @@ import (
 type AppApi struct{}
 
 var g_AppApi AppApi = AppApi{}
+
+type I18nItem struct {
+	FieldId   string `field-id:"field_id"`
+	ItemKey   string `field-id:"item_key"`
+	ItemValue string `field-id:"item_value"`
+}
+
+type ModuleNavI18nData struct {
+	NavName   *I18nItem
+	ShortName *I18nItem
+}
 
 func (api *AppApi) Config(c *gin.Context) {
 	appConfig := AppConfig{
@@ -77,6 +90,14 @@ func (api *AppApi) Config(c *gin.Context) {
 			Avatar: fmt.Sprintf(g_appConfig.Pandora.User.Avatar, userId),
 		}
 	}
+
+	i18nMap, err := api.GetModuleNavi18n(c, g_appConfig.Org.OrgId, "main")
+	if err != nil {
+		logger.Error("GetModuleNavi18n error: ", err)
+		c.JSON(http.StatusInternalServerError, ApiReponse{Code: "ERROR", Message: "GetModuleNavi18n error"})
+		return
+	}
+
 	sqlParams := map[string]any{
 		"ORG_ID": g_appConfig.Org.OrgId,
 	}
@@ -89,11 +110,23 @@ func (api *AppApi) Config(c *gin.Context) {
 		return
 	}
 	for _, module := range modules {
+
+		title := module.NavName
+		titleShort := module.TitleShort
+		if i18n, ok := i18nMap[module.NavId]; ok {
+			if i18n.NavName != nil {
+				title = i18n.NavName.ItemValue
+			}
+			if i18n.ShortName != nil {
+				titleShort = i18n.ShortName.ItemValue
+			}
+		}
+
 		menu := MenuItem{
 			Id:         module.NavId,
 			Type:       module.ViewType,
-			Title:      module.NavName,
-			TitleShort: module.TitleShort,
+			Title:      title,
+			TitleShort: titleShort,
 			View:       module.NavType,
 			Url:        module.Url,
 			Ico:        module.NavIcon,
@@ -126,6 +159,12 @@ func (api *AppApi) ModuleConfig(c *gin.Context) {
 		return
 	}
 
+	i18nMainMap, err := api.GetModuleNavi18n(c, g_appConfig.Org.OrgId, "main")
+	if err != nil {
+		logger.Error("GetModuleNavi18n error: ", err)
+		c.JSON(http.StatusInternalServerError, ApiReponse{Code: "ERROR", Message: "GetModuleNavi18n error"})
+		return
+	}
 	sqlParams := map[string]any{
 		"ORG_ID":    g_appConfig.Org.OrgId,
 		"MODULE_ID": moduleId,
@@ -144,14 +183,25 @@ func (api *AppApi) ModuleConfig(c *gin.Context) {
 	}
 
 	moduleInfo := recs[0]
+	moduleTitle := moduleInfo.NavName
+	moduleTitleShort := moduleInfo.TitleShort
+	if i18n, ok := i18nMainMap[moduleId]; ok {
+		if i18n.NavName != nil {
+			moduleTitle = i18n.NavName.ItemValue
+		}
+		if i18n.ShortName != nil {
+			moduleTitleShort = i18n.ShortName.ItemValue
+		}
+	}
+
 	pageConfig := PageConfig{
-		Title:      moduleInfo.NavName,
-		TitleShort: moduleInfo.TitleShort,
+		Title:      moduleTitle,
+		TitleShort: moduleTitleShort,
 		Type:       moduleInfo.ViewType,
 		Menu:       []*MenuItem{},
 	}
 	if moduleInfo.ViewType == "select-nav-page" {
-		items, err := mapping(moduleInfo.AppModule, []string{moduleInfo.MenuApi}, nil)
+		items, err := mapping(moduleInfo.AppModule, []string{moduleInfo.MenuApi}, nil, "en")
 		if err != nil {
 			logger.Error("QueryDict error: ", err)
 			c.JSON(http.StatusInternalServerError, ApiReponse{Code: "ERROR", Message: "QueryDict error"})
@@ -165,6 +215,12 @@ func (api *AppApi) ModuleConfig(c *gin.Context) {
 			}
 		}
 	}
+	i18nMap, err := api.GetModuleNavi18n(c, g_appConfig.Org.OrgId, moduleId)
+	if err != nil {
+		logger.Error("GetModuleNavi18n error: ", err)
+		c.JSON(http.StatusInternalServerError, ApiReponse{Code: "ERROR", Message: "GetModuleNavi18n error"})
+		return
+	}
 	navs, err := base_db.DBQueryEnt2[entities.BaseModuleNav](base_db.DB_CONN_NAME_DEFAULT, entities.DB_TABLE_BASE_MODULE_NAV, base_db.NewDBQueryOptions().Where("ORG_ID={ORG_ID} and MODULE_ID={MODULE_ID} and STATUS='00'").Params(sqlParams).Order("order_no"))
 	if err != nil {
 		logger.Error("DBQueryEnt fail: ", err)
@@ -173,11 +229,21 @@ func (api *AppApi) ModuleConfig(c *gin.Context) {
 	}
 
 	for _, nav := range navs {
+		title := nav.NavName
+		titleShort := nav.TitleShort
+		if i18n, ok := i18nMap[nav.NavId]; ok {
+			if i18n.NavName != nil {
+				title = i18n.NavName.ItemValue
+			}
+			if i18n.ShortName != nil {
+				titleShort = i18n.ShortName.ItemValue
+			}
+		}
 		menu := MenuItem{
 			Id:         nav.NavId,
 			Type:       nav.ViewType,
-			Title:      nav.NavName,
-			TitleShort: nav.TitleShort,
+			Title:      title,
+			TitleShort: titleShort,
 			Url:        nav.Url,
 			Ico:        nav.NavIcon,
 			View:       nav.NavType,
@@ -187,4 +253,52 @@ func (api *AppApi) ModuleConfig(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, ApiReponse{Code: "OK", Message: "OK", Data: pageConfig})
+}
+
+func (api *AppApi) GetModuleNavi18n(c *gin.Context, orgid string, group string) (map[string]*ModuleNavI18nData, error) {
+	lang := "en"
+	if l, ok := g_appConfig.Pandora.Env["lang"]; ok {
+		lang = l.(string)
+	}
+
+	cookies := c.Request.Cookies()
+	for _, cookie := range cookies {
+		if cookie.Name == "app_lang" {
+			lang = cookie.Value
+		}
+	}
+	if l := c.Query("lang"); l != "" {
+		lang = l
+	}
+
+	i18nParams := map[string]any{
+		"ORG_ID":   orgid,
+		"GROUP_ID": group,
+	}
+	reg := regexp.MustCompile(`[^a-zA-Z_]`)
+	lang = reg.ReplaceAllString(lang, "")
+	fields := fmt.Sprintf("field_id, item_key, %s item_value", lang)
+	i18nItems, err := base_db.DBQueryG[I18nItem](base_db.DB_CONN_NAME_DEFAULT, base_db.NewDBQueryOptions().Table("base_i18n").Fields(strings.Split(fields, ",")).Where("ORG_ID={ORG_ID} and NS='menu' AND GROUP_ID={GROUP_ID} and STATUS='active'").Params(i18nParams))
+	if err != nil {
+		logger.Error("DBQueryEnt fail: ", err)
+		c.JSON(http.StatusInternalServerError, ApiReponse{Code: "ERROR", Message: "DBQueryEnt fail"})
+		return nil, err
+	}
+
+	i18nMap := map[string]*ModuleNavI18nData{}
+	for _, item := range i18nItems {
+		if i18nMap[item.ItemKey] == nil {
+			i18nMap[item.ItemKey] = &ModuleNavI18nData{}
+		}
+
+		switch item.FieldId {
+		case "nav_name":
+			i18nMap[item.ItemKey].NavName = item
+		case "title_short":
+			i18nMap[item.ItemKey].ShortName = item
+		}
+
+	}
+
+	return i18nMap, nil
 }

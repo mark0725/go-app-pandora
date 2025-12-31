@@ -46,21 +46,40 @@ func Pages(c *gin.Context) {
 	//module := c.Param("module")
 	filepath := c.Param("path")
 	logger.Debugf("Pages path: %s", filepath)
-	props := map[string]string{}
+	props := map[string]any{}
+
+	fullPath := path.Join(g_appConfig.Pandora.PagesPath, "pages", filepath)
+	logger.Infof("GetPageView [%s]", fullPath)
+	//判断文件是否存在
+	if _, err := os.Stat(fullPath + ".ds.xml"); os.IsNotExist(err) {
+		logger.Errorf("GetPageView [%s] not found", fullPath)
+		c.JSON(404, "Not Found")
+	}
+
+	if lang, ok := g_appConfig.Pandora.Env["lang"]; ok {
+		props["Lang"] = lang
+	}
+
+	cookies := c.Request.Cookies()
+	for _, cookie := range cookies {
+		props[cookie.Name] = cookie.Value
+		if cookie.Name == "app_lang" {
+			props["Lang"] = cookie.Value
+		}
+	}
+
+	if lang, ok := c.Request.Header["Lang"]; ok {
+		props["Lang"] = lang
+	}
 
 	queryParams := map[string]string{}
 	for key, value := range c.Request.URL.Query() {
 		if len(value) > 0 {
 			queryParams[key] = value[0]
 		}
-	}
-
-	fullPath := path.Join(g_appConfig.Pandora.PagesPath, "pages", filepath+".ds.xml")
-	logger.Infof("GetPageView [%s]", fullPath)
-	//判断文件是否存在
-	if _, err := os.Stat(fullPath); os.IsNotExist(err) {
-		logger.Errorf("GetPageView [%s] not found", fullPath)
-		c.JSON(404, "Not Found")
+		if key == "lang" {
+			props["Lang"] = value[0]
+		}
 	}
 
 	if content, err := PageEngine(g_appConfig.Pandora.Title, fullPath, g_appConfig.Pandora.Env, props, queryParams); err == nil {

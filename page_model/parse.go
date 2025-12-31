@@ -8,9 +8,11 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+	"text/template"
 	"unicode"
 
 	base_utils "github.com/mark0725/go-app-base/utils"
+	"github.com/mark0725/go-app-pandora/i18n"
 )
 
 type IViewObject interface {
@@ -288,21 +290,63 @@ func lowerFirstRune(s string) string {
 	return string(runes)
 }
 
-func ParsePageModel(path string, params map[string]string) (*PageModel, error) {
-	xmlContent, err := os.ReadFile(path)
+func ParsePageModel(path string, params map[string]any) (*PageModel, error) {
+	dsContent, err := os.ReadFile(path + ".ds.xml")
+	if err != nil {
+		return nil, err
+	}
+
+	vars := map[string]any{}
+	for k, v := range params {
+		vars[k] = v
+	}
+
+	if props, ok := params["Props"]; ok {
+		if l, ok := props.(map[string]any)["Lang"]; ok {
+			lang := "en"
+			if s, ok := l.(string); ok {
+				lang = s
+			}
+			if _, err := os.Stat(path + ".i18n.xml"); err == nil {
+				i18nContent, err := os.ReadFile(path + ".i18n.xml")
+				if err != nil {
+					return nil, err
+				}
+				if len(i18nContent) > 0 {
+					allLangs, err := i18n.Parse(i18nContent)
+					if err != nil {
+						return nil, err
+					}
+
+					if d, ok := allLangs[lang]; ok {
+						vars["I18N"] = d
+					}
+				}
+			}
+
+		}
+	}
+
+	tmpl, err := template.New(path).Parse(string(dsContent))
+	if err != nil {
+		return nil, err
+	}
+
+	var result strings.Builder
+	err = tmpl.Execute(&result, vars)
 	if err != nil {
 		return nil, err
 	}
 
 	var pm PageModel
-	if err := xml.Unmarshal(xmlContent, &pm); err != nil {
+	if err := xml.Unmarshal([]byte(result.String()), &pm); err != nil {
 		return nil, err
 	}
 
 	return &pm, nil
 }
 
-func ParsePageModel2Map(path string, params map[string]string) (map[string]any, error) {
+func ParsePageModel2Map(path string, params map[string]any) (map[string]any, error) {
 
 	pm, err := ParsePageModel(path, params)
 	if err != nil {
