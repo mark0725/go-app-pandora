@@ -261,12 +261,10 @@ func (api *AppApi) GetModuleNavi18n(c *gin.Context, orgid string, group string) 
 		lang = l.(string)
 	}
 
-	cookies := c.Request.Cookies()
-	for _, cookie := range cookies {
-		if cookie.Name == "app_lang" {
-			lang = cookie.Value
-		}
+	if cookie, err := c.Request.Cookie("app_lang"); err == nil {
+		lang = cookie.Value
 	}
+
 	if l := c.Query("lang"); l != "" {
 		lang = l
 	}
