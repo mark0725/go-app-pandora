@@ -55,6 +55,8 @@ github.com/mark0725/go-app-base v0.0.0-20251017085410-af574759df2f h1:LBH9sX/LnZ
 github.com/mark0725/go-app-base v0.0.0-20251017085410-af574759df2f/go.mod h1:PMBdoPjOMqLFdFXRj4U3SR7N01H4AheSR0wAmUozkP8=
 github.com/mark0725/go-app-base v0.0.0-20251118101543-010675956573 h1:wPU9FsMP4YocO91BMedB380QnoRULqkM/UGtWotaWsM=
 github.com/mark0725/go-app-base v0.0.0-20251118101543-010675956573/go.mod h1:XH8JP43xWc+BD99T5pdu3ilH6Aqsjz4lWPo6ga1qJgw=
+github.com/mark0725/go-app-base v0.0.0-20251119021602-0bbdece9abc7 h1:kKeeFEUJRbO1w1sSdRu4GFV7a6a5w/hFwSqyf8JfMRM=
+github.com/mark0725/go-app-base v0.0.0-20251119021602-0bbdece9abc7/go.mod h1:XH8JP43xWc+BD99T5pdu3ilH6Aqsjz4lWPo6ga1qJgw=
 github.com/mark0725/go-pandora v0.0.0-20250924092418-066d47095db5 h1:CE5qrd19U6QY1jJJxpYmmT6kpozgp0NAG5mYw/pGV/c=
 github.com/mark0725/go-pandora v0.0.0-20250924092418-066d47095db5/go.mod h1:Z5oA4FAsBOCtg2SFEIdv9DtA7EC0j78rWF4A+rDxL8c=
 github.com/mattn/go-isatty v0.0.20 h1:xfD0iDuEKnDkl03q4limB+vH+GxLEtL/jb4xVJSWWEY=
